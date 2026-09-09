@@ -2,9 +2,12 @@
 
 Un paquete de Python y herramienta de línea de comandos (CLI) diseñado para descargar, limpiar y exportar datos de comercio exterior (importaciones y exportaciones) desde la API pública del INDEC de Argentina. 
 
-Al especificar posiciones arancelarias (códigos NCM a 8 dígitos) y años fiscales, la herramienta extrae los volúmenes y valores (USD CIF / Peso Neto) desagregados por país y por periodo mensual, generando un archivo CSV listo para su análisis.
+Al especificar posiciones arancelarias (códigos NCM a 8 dígitos) y años fiscales, la herramienta extrae los volúmenes y valores (USD CIF / Peso Neto) desagregados por país y por periodo mensual, generando un archivo CSV listo para su análisis. Además, incluye un explorador integrado de nomenclatura arancelaria en el Mercosur que te ayuda a descubrir los códigos de 8 dígitos si solo conoces el código de 2, 4 o 6 dígitos.
+
+> **Limitación importante de la API del INDEC:** El buscador de productos del INDEC corta automáticamente los resultados al alcanzar los 35 registros. Para sortear esta limitación y no perder códigos ocultos, es fundamental realizar búsquedas usando los códigos arancelarios más específicos posibles (entre más cerca de los 8 dígitos, mejor).
 
 ## Características
+- **Búsqueda de NCM integrada:** ¿No conoces el código exacto para el Mercosur? Usa la función de búsqueda para explorar el catálogo oficial del INDEC a partir de prefijos cortos y obtener las descripciones exactas antes de descargar.
 - **Ventajas sobre la web oficial:** Permite obtener en una sola descarga las operaciones con todos los países, eliminando la necesidad de buscar y descargar la información año por año manualmente.
 - **Datos enriquecidos:** Recupera información exclusiva de la API que no se visualiza en las tablas del sitio web del INDEC, como la descripción oficial de cada partida NCM y el código ISO2 del país.
 - **Doble interfaz:** Úsalo directamente desde la terminal (CLI) o impórtalo en tus Jupyter Notebooks.
@@ -33,25 +36,55 @@ Puedes utilizar esta herramienta de dos maneras según tus necesidades:
 ### Opción A: Línea de Comandos (CLI)
 Ideal para descargas rápidas y automatización en la terminal. El comando `indec-descargar` estará disponible globalmente en tu entorno.
 
+**1. Explorar códigos:**
+Si solo tienes los primeros dígitos de un producto (ej. `9306`), usa el parámetro `-b` (buscar) para ver el catálogo y sus descripciones. *Esto no descarga datos comerciales, solo te ayuda a elegir el código correcto.*
 ```bash
-indec-descargar --codes 38249989 38249941 --years 2025 2026 --type import --outdir outputs
+indec-descargar -b 1201 -y 2026
+```
+
+**2. Descargar datos:**
+Una vez que identificaste tus códigos de 8 dígitos, procede con la descarga:
+```bash
+indec-descargar --codes 12011000 --years 2025 2026 --type import --outdir outputs
 ```
 
 **Argumentos disponibles:**
-* `-c, --codes`: (Requerido) Códigos arancelarios NCM a 8 dígitos separados por espacios.
+* `-b, --buscar`: (Opcional) Busca descripciones de códigos NCM a partir de un prefijo.
+* `-c, --codes`: (Requerido para descarga) Códigos arancelarios NCM a 8 dígitos separados por espacios.
 * `-y, --years`: (Requerido) Años fiscales a consultar.
 * `-t, --type`: (Opcional) `import` o `export`. (Por defecto: `import`).
 * `-o, --outdir`: (Opcional) Carpeta de destino. (Por defecto: directorio actual).
 
 ### Opción B: Jupyter Notebooks / Python Scripts
-Ideal para integrar la descarga directamente en tus flujos de análisis de datos.
+Ideal para integrar la exploración y la descarga directamente en tus flujos de análisis de datos.
 
+**1. Explorar códigos:**
+```python
+from indec_comex.core import search_ncm_codes
+
+# Buscar NCMs que empiecen con "1201" para el año 2026
+df_codigos = search_ncm_codes("1201", 2026)
+
+# This temporarily overrides display limits for the code block inside
+with pd.option_context(
+    "display.max_rows",
+    None,  # Show all rows
+    "display.max_columns",
+    None,  # Show all columns
+    "display.max_colwidth",
+    None,  # Show all text in cells without cutting it off
+):
+    display(df_codigos)
+```
+
+**2. Ejecutar descarga:**
 ```python
 import os
 from datetime import datetime
 from indec_comex.core import automate_indec_comex
 
-codigos = ["03048100"]
+# Usamos el código de 8 dígitos encontrado en el paso anterior
+codigos = ["12011000"]
 timestamp = datetime.now().strftime("%Y-%m-%d")
 
 # Preparar directorio y nombre de archivo
@@ -68,7 +101,8 @@ df = automate_indec_comex(
 )
 
 # Previsualizar datos
-df.head(5)
+if df is not None:
+    print(df.head(5))
 ```
 
 ## Estructura de salida (Outputs)
