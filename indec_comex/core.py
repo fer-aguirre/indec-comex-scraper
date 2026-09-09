@@ -4,6 +4,41 @@ import requests
 import json
 import time
 
+# (Mantén tus funciones anteriores: fetch_with_retries, fetch_comex_data y automate_indec_comex)
+
+def search_ncm_codes(term, year):
+    """
+    Consulta la API de productos y devuelve un DataFrame con los códigos NCM 
+    que coinciden con el término de búsqueda y su descripción.
+    """
+    url = f"https://comexbe.indec.gob.ar/public-api/search/products?i18n=es&term={term}&year={year}"
+    
+    print(f"Consultando sub-partidas NCM para el prefijo '{term}' en {year}...")
+    data = fetch_with_retries(url)
+    
+    if not data:
+        print("No se encontraron resultados.")
+        return None
+        
+    results = []
+    for item in data:
+        ncm = item.get('id')
+        desc = item.get('description', {}).get('es', 'Sin descripción')
+        
+        # Filtrar para asegurarse de que empiezan con el término de búsqueda
+        if str(ncm).startswith(str(term)):
+            results.append({'NCM': str(ncm), 'Descripción': desc})
+            
+    df = pd.DataFrame(results)
+    
+    if not df.empty:
+        # Alerta amigable si llegamos al tope (truncamiento de la API)
+        if len(df) >= 30:
+            print(f"  [!] Atención: La API devolvió {len(df)} resultados. La lista podría estar cortada.")
+            print(f"      Si no encuentras el código de 8 dígitos, prueba buscando con un dígito más (ej. de '{term}' a '{term}0').")
+            
+    return df
+
 def fetch_with_retries(url, max_retries=3, timeout=15):
     """
     Realiza una petición HTTP de forma segura. Si el servidor está sobrecargado (503), 
@@ -65,7 +100,7 @@ def automate_indec_comex(hs_codes, years, commerce_type="import", output_filenam
              continue
         
         for record in records:
-            record['Year'] = year 
+            record['Año'] = year 
             
         all_data.extend(records)
         time.sleep(1) 
@@ -78,8 +113,8 @@ def automate_indec_comex(hs_codes, years, commerce_type="import", output_filenam
             df['country'] = df['country'].apply(lambda x: x.get('name') if isinstance(x, dict) else x)
             
         if 'product' in df.columns:
-            df['HS Code'] = df['product'].apply(lambda x: x.get('id') if isinstance(x, dict) else None)
-            df['Description'] = df['product'].apply(
+            df['NCM'] = df['product'].apply(lambda x: x.get('id') if isinstance(x, dict) else None)
+            df['Descripción'] = df['product'].apply(
                 lambda x: x.get('description', {}).get('es') if isinstance(x, dict) and isinstance(x.get('description'), dict) else None
             )
 
@@ -97,12 +132,12 @@ def automate_indec_comex(hs_codes, years, commerce_type="import", output_filenam
         if 'USD CIF' in df.columns:
             df['USD CIF'] = pd.to_numeric(df['USD CIF'], errors='coerce')
         
-        desired_columns = ['HS Code', 'Description', 'País', 'ISO2', 'Mes', 'Peso Neto (KG)', 'USD CIF', 'Year']
+        desired_columns = ['NCM', 'Descripción', 'País', 'ISO2', 'Mes', 'Peso Neto (KG)', 'USD CIF', 'Año']
         existing_columns = [col for col in desired_columns if col in df.columns]
         df = df[existing_columns]
         
         df.to_csv(output_filename, index=False, encoding='utf-8-sig')
-        print(f"\n¡Éxito! Se compilaron {len(df)} registros y se exportaron a '{output_filename}'.")
+        print(f"\nSe compilaron {len(df)} registros y se exportaron a '{output_filename}'.")
         return df
     else:
         print("\nNo se recuperaron datos en ninguno de los años solicitados.")
