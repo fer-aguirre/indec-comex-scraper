@@ -7,7 +7,7 @@ from indec_comex.core import automate_indec_comex, search_ncm_codes
 def main():
     parser = argparse.ArgumentParser(description="Descarga y explora datos comerciales del INDEC de Argentina.")
     
-    parser.add_argument('-b', '--buscar', type=str, 
+    parser.add_argument('-s', '--search', type=str, 
                         help='Busca descripciones de códigos NCM a partir de un prefijo (Ej: 1201). No descarga datos.')
     
     parser.add_argument('-c', '--codes', nargs='+', 
@@ -31,15 +31,15 @@ def main():
     pd.set_option('display.expand_frame_repr', False)
 
     # --- MODO BÚSQUEDA ---
-    if args.buscar:
-        df_search = search_ncm_codes(term=args.buscar, year=args.years[0])
+    if args.search:
+        df_search = search_ncm_codes(term=args.search, year=args.years[0])
         if df_search is not None and not df_search.empty:
             print("\n" + df_search.to_markdown(tablefmt="psql", index=False))
         return
 
     # --- MODO DESCARGA ---
     if not args.codes:
-        parser.error("El argumento -c/--codes es obligatorio para descargar datos. Úsalo, o incluye -b/--buscar para explorar el catálogo de códigos.")
+        parser.error("El argumento -c/--codes es obligatorio para descargar datos. Úsalo, o incluye -s/--search para explorar el catálogo de códigos.")
 
     # 1. Definir el nombre del periodo para el archivo
     periodo_nombre = "anual" if args.period == 'yearly' else "mensual"
