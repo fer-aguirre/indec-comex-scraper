@@ -68,7 +68,6 @@ def fetch_comex_data(year, products, commerce_type="import", period="yearly"):
 def automate_indec_comex(hs_codes, years, commerce_type="import", output_filename="comex_data.csv", period="yearly"):
     """
     Descarga y limpia datos de comercio exterior para múltiples años y códigos NCM.
-    'commerce_type' usa 'import' por defecto.
     """
     all_data = []
     hs_codes = [str(code) for code in hs_codes]
@@ -94,16 +93,29 @@ def automate_indec_comex(hs_codes, years, commerce_type="import", output_filenam
     if all_data:
         df = pd.DataFrame(all_data)
         
+        # Procesar datos de país
         if 'country' in df.columns:
             df['ISO2'] = df['country'].apply(lambda x: x.get('iso2') if isinstance(x, dict) else None)
             df['country'] = df['country'].apply(lambda x: x.get('name') if isinstance(x, dict) else x)
             
+        # Procesar datos de producto (NCM, Descripciones y Enmiendas)
         if 'product' in df.columns:
             df['NCM'] = df['product'].apply(lambda x: x.get('id') if isinstance(x, dict) else None)
+            
             df['Descripción'] = df['product'].apply(
                 lambda x: x.get('description', {}).get('es') if isinstance(x, dict) and isinstance(x.get('description'), dict) else None
             )
+            
+            # --- NUEVAS VARIABLES DE ENMIENDAS ---
+            df['WTO Enmienda'] = df['product'].apply(
+                lambda x: x.get('amendments') if isinstance(x, dict) else None
+            )
+            
+            df['Enmienda Descripción'] = df['product'].apply(
+                lambda x: str(x.get('descriptionByAmendment')) if isinstance(x, dict) and x.get('descriptionByAmendment') is not None else None
+            )
 
+        # Mapeo de columnas base
         column_mapping = {
             'country': 'País',
             'month': 'Mes',
@@ -112,22 +124,29 @@ def automate_indec_comex(hs_codes, years, commerce_type="import", output_filenam
         }
         df.rename(columns=column_mapping, inplace=True)
         
+        # Conversión a números
         if 'Peso Neto (KG)' in df.columns:
             df['Peso Neto (KG)'] = pd.to_numeric(df['Peso Neto (KG)'], errors='coerce')
         if 'USD CIF' in df.columns:
             df['USD CIF'] = pd.to_numeric(df['USD CIF'], errors='coerce')
             
-        desired_columns = ['NCM', 'Descripción', 'País', 'ISO2', 'Mes', 'Peso Neto (KG)', 'USD CIF', 'Año']
+        # Definir el orden final de las columnas, incluyendo las nuevas de Enmienda
+        desired_columns = [
+            'NCM', 'Descripción', 'WTO Enmienda', 'Enmienda Descripción', 
+            'País', 'ISO2', 'Mes', 'Peso Neto (KG)', 'USD CIF', 'Año'
+        ]
         
-        # Elimina la variable 'mes' si el periodo seleccionado fue anual
+        # Eliminar explícitamente la variable Mes si el periodo es anual
         if period == 'yearly':
             desired_columns.remove('Mes')
             if 'Mes' in df.columns:
                 df.drop(columns=['Mes'], inplace=True)
 
+        # Filtrar y ordenar el DataFrame final
         existing_columns = [col for col in desired_columns if col in df.columns]
         df = df[existing_columns]
         
+        # Exportar
         df.to_csv(output_filename, index=False, encoding='utf-8-sig')
         print(f"\nSe compilaron exitosamente {len(df)} registros y se exportaron a '{output_filename}'.")
         return df
