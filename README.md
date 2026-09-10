@@ -14,10 +14,10 @@ Al especificar posiciones arancelarias (códigos NCM a 8 dígitos) y años fisca
 - **Doble interfaz:** Úsalo directamente desde la terminal (CLI) o impórtalo en tus Jupyter Notebooks.
 - **Exportación inteligente:** Genera archivos CSV ordenados y nombra los archivos dinámicamente con fechas de ejecución para mantener un historial limpio.
 
-### 🔍 Sobre las Enmiendas del Sistema Armonizado
+### Sobre las Enmiendas del Sistema Armonizado
 Los códigos arancelarios se actualizan globalmente cada varios años. Nuestra herramienta extrae las columnas `WTO Enmienda` y `Enmienda Descripción`, las cuales funcionan como un historial de versiones para cada código. 
 
-**¿Cómo interpretarlo?** Si un código indica que pertenece únicamente a la "7ma Enmienda", significa que fue creado o modificado en 2022; por lo tanto, intentar descargar datos de ese mismo código antes de ese año no arrojará los resultados esperados, ya que en ese entonces el producto se clasificaba bajo otro código.
+**¿Cómo interpretarlo?** Si un código indica que pertenece únicamente a la "7ma Enmienda", significa que fue creado o modificado en 2022. Por lo tanto, intentar descargar datos de ese mismo código antes de ese año no arrojará los resultados esperados, ya que en ese entonces el producto se clasificaba bajo otro código.
 
 | Enmienda | Año de vigencia |
 | :---: | :---: |
