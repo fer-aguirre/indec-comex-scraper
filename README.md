@@ -55,7 +55,7 @@ indec-descargar --codes 12011000 --years 2025 2026 --type import --period month 
 ```
 
 **Argumentos disponibles:**
-* `-b, --buscar`: (Opcional) Busca descripciones de códigos NCM a partir de un prefijo.
+* `-s, --search`: (Opcional) Busca descripciones de códigos NCM a partir de un prefijo.
 * `-c, --codes`: (Requerido para descarga) Códigos arancelarios NCM a 8 dígitos separados por espacios.
 * `-y, --years`: (Requerido) Años fiscales a consultar.
 * `-t, --type`: (Opcional) `import` o `export`. (Por defecto: `import`).
