@@ -2,18 +2,16 @@ import argparse
 import os
 import pandas as pd
 from datetime import datetime
-from .core import automate_indec_comex, search_ncm_codes
+from indec_comex.core import automate_indec_comex, search_ncm_codes
 
 def main():
     parser = argparse.ArgumentParser(description="Descarga y explora datos comerciales del INDEC de Argentina.")
     
-    # NUEVO ARGUMENTO: Búsqueda
     parser.add_argument('-b', '--buscar', type=str, 
-                        help='Busca descripciones de códigos NCM a partir de un prefijo (Ej: 93). No descarga datos.')
+                        help='Busca descripciones de códigos NCM a partir de un prefijo (Ej: 1201). No descarga datos.')
     
-    # El argumento -c ya no es required=True por defecto, lo validaremos manualmente
     parser.add_argument('-c', '--codes', nargs='+', 
-                        help='Lista de códigos NCM a 8 dígitos (Ej: 38249989). Requerido para descargas.')
+                        help='Lista de códigos NCM a 8 dígitos (Ej: 12011000). Requerido para descargas.')
     
     parser.add_argument('-y', '--years', nargs='+', type=int, required=True, 
                         help='Años a consultar separados por espacios (Ej: 2025 2026). Requerido siempre.')
@@ -21,31 +19,27 @@ def main():
     parser.add_argument('-t', '--type', default='import', choices=['import', 'export'], 
                         help='Tipo de comercio: import o export (Por defecto: import)')
                         
+    parser.add_argument('-p', '--period', default='yearly', choices=['month', 'yearly'],
+                        help="Granularidad temporal: 'yearly' para totales anuales (por defecto), 'month' para datos mensuales.")
+                        
     parser.add_argument('-o', '--outdir', default='.', 
-                        help='Directorio donde se guardará el archivo (opcional. Por defecto: directorio actual)')
+                        help='Directorio donde se guardará el archivo (Opcional. Por defecto: directorio actual)')
 
     args = parser.parse_args()
 
-    # Configuración de Pandas para que las tablas en la terminal se vean bien
     pd.set_option('display.max_colwidth', 75)
     pd.set_option('display.expand_frame_repr', False)
 
-    # =========================================================
-    # MODO 1: BÚSQUEDA (El usuario usó la bandera -b)
-    # =========================================================
+    # --- MODO BÚSQUEDA ---
     if args.buscar:
-        # Usamos el primer año proporcionado para la búsqueda
         df_search = search_ncm_codes(term=args.buscar, year=args.years[0])
-        
         if df_search is not None and not df_search.empty:
             print("\n" + df_search.to_markdown(tablefmt="psql", index=False))
-        return  # Terminamos el programa aquí sin descargar nada
+        return
 
-    # =========================================================
-    # MODO 2: DESCARGA (Validamos que existan códigos)
-    # =========================================================
+    # --- MODO DESCARGA ---
     if not args.codes:
-        parser.error("El argumento -c/--codes es obligatorio para descargar datos. Úsalo o incluye -b/--buscar para ver el catálogo de códigos.")
+        parser.error("El argumento -c/--codes es obligatorio para descargar datos. Úsalo, o incluye -b/--buscar para explorar el catálogo de códigos.")
 
     codigos_unidos = "-".join(args.codes)
     timestamp = datetime.now().strftime("%Y-%m-%d")
@@ -61,7 +55,8 @@ def main():
         hs_codes=args.codes, 
         years=args.years, 
         commerce_type=args.type, 
-        output_filename=nombre_archivo_dinamico
+        output_filename=nombre_archivo_dinamico,
+        period=args.period
     )
 
     if df is not None and not df.empty:
