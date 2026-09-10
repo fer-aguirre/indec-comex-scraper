@@ -41,15 +41,17 @@ def main():
     if not args.codes:
         parser.error("El argumento -c/--codes es obligatorio para descargar datos. Úsalo, o incluye -b/--buscar para explorar el catálogo de códigos.")
 
+    # 1. Definir el nombre del periodo para el archivo
+    periodo_nombre = "anual" if args.period == 'yearly' else "mensual"
+    
     codigos_unidos = "-".join(args.codes)
     timestamp = datetime.now().strftime("%Y-%m-%d")
-    nombre_archivo = f"indec_{codigos_unidos}_{timestamp}.csv"
+    
+    # 2. Agregar el periodo al nombre del archivo
+    nombre_archivo = f"indec_{periodo_nombre}_{codigos_unidos}_{timestamp}.csv"
     
     os.makedirs(args.outdir, exist_ok=True)
     nombre_archivo_dinamico = os.path.join(args.outdir, nombre_archivo)
-
-    print(f"\nPreparando exportación hacia: {nombre_archivo_dinamico}")
-    print("-" * 50)
 
     df = automate_indec_comex(
         hs_codes=args.codes, 
