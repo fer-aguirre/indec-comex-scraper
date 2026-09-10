@@ -114,4 +114,4 @@ if df is not None:
 ## Estructura de salida (Outputs)
 Los archivos se guardarán por defecto en el directorio asignado (ej. `outputs/`) con una nomenclatura estándar que facilita identificar de qué trata cada archivo sin abrirlo:
 
-`indec_[codigos-consultados]_[fecha-de-descarga].csv`
+`indec_[anual/mensual]_[codigos-consultados]_[fecha-de-descarga].csv`
