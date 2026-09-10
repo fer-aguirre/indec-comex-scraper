@@ -7,12 +7,27 @@ Al especificar posiciones arancelarias (códigos NCM a 8 dígitos) y años fisca
 > **Limitación importante de la API del INDEC:** El buscador de productos del INDEC corta automáticamente los resultados al alcanzar los 35 registros. Para sortear esta limitación y no perder códigos ocultos, es fundamental realizar búsquedas usando los códigos arancelarios más específicos posibles (entre más cerca de los 8 dígitos, mejor).
 
 ## Características
-- **Búsqueda de NCM integrada:** ¿No conoces el código exacto para el Mercosur? Usa la función de búsqueda para explorar el catálogo oficial del INDEC a partir de prefijos cortos y obtener las descripciones exactas antes de descargar.
+- **Búsqueda de NCM integrada:** ¿No conoces el código exacto para el Mercosur? Usa la función de búsqueda para explorar el catálogo oficial del INDEC a partir de prefijos cortos y obtén las descripciones exactas antes de descargar.
 - **Ventajas sobre la web oficial:** Permite obtener en una sola descarga las operaciones con todos los países, eliminando la necesidad de buscar y descargar la información año por año manualmente.
-- **Datos enriquecidos:** Recupera información exclusiva de la API que no se visualiza en las tablas del sitio web del INDEC, como la descripción oficial de cada partida NCM y el código ISO2 del país.
+- **Datos enriquecidos:** Recupera información exclusiva de la API que no se visualiza en las tablas del sitio web del INDEC, como la descripción oficial de cada código NCM, el historial de enmiendas asociadas al código, y el código ISO2 del país.
 - **Flexibilidad temporal:** Elige entre descargar los totales anuales consolidados (por defecto) o los datos desagregados mes a mes.
 - **Doble interfaz:** Úsalo directamente desde la terminal (CLI) o impórtalo en tus Jupyter Notebooks.
 - **Exportación inteligente:** Genera archivos CSV ordenados y nombra los archivos dinámicamente con fechas de ejecución para mantener un historial limpio.
+
+### 🔍 Sobre las Enmiendas del Sistema Armonizado
+Los códigos arancelarios se actualizan globalmente cada varios años. Nuestra herramienta extrae las columnas `WTO Enmienda` y `Enmienda Descripción`, las cuales funcionan como un historial de versiones para cada código. 
+
+**¿Cómo interpretarlo?** Si un código indica que pertenece únicamente a la "7ma Enmienda", significa que fue creado o modificado en 2022; por lo tanto, intentar descargar datos de ese mismo código antes de ese año no arrojará los resultados esperados, ya que en ese entonces el producto se clasificaba bajo otro código.
+
+| Enmienda | Año de vigencia |
+| :---: | :---: |
+| 1st Amendment | 1992 |
+| 2nd Amendment | 1996 |
+| 3rd Amendment | 2002 |
+| 4th Amendment | 2007 |
+| 5th Amendment | 2012 |
+| 6th Amendment | 2017 |
+| 7th Amendment | 2022 |
 
 ## Instalación
 
@@ -38,9 +53,9 @@ Puedes utilizar esta herramienta de dos maneras según tus necesidades:
 Ideal para descargas rápidas y automatización en la terminal. El comando `indec-descargar` estará disponible globalmente en tu entorno.
 
 **1. Explorar códigos:**
-Si solo tienes los primeros dígitos de un producto (ej. `9306`), usa el parámetro `-b` (buscar) para ver el catálogo y sus descripciones. *Esto no descarga datos comerciales, solo te ayuda a elegir el código correcto.*
+Si solo tienes los primeros dígitos de un producto (ej. `9306`), usa el parámetro `-s` (buscar) para ver el catálogo y sus descripciones. *Esto no descarga datos comerciales, solo te ayuda a elegir el código correcto.*
 ```bash
-indec-descargar -b 1201 -y 2026
+indec-descargar -s 1201 -y 2026
 ```
 
 **2. Descargar datos:**
@@ -91,18 +106,20 @@ from indec_comex.core import automate_indec_comex
 # Usamos el código de 8 dígitos encontrado en el paso anterior
 codigos = ["12011000"]
 timestamp = datetime.now().strftime("%Y-%m-%d")
+periodo_descarga = "yearly"
+periodo_nombre = "anual" if periodo_descarga == "yearly" else "mensual"
 
 # Preparar directorio y nombre de archivo
 output_dir = "outputs"
 os.makedirs(output_dir, exist_ok=True)
-filepath = os.path.join(output_dir, f"indec_{'-'.join(codigos)}_{timestamp}.csv")
+filepath = os.path.join(output_dir, f"indec_{periodo_nombre}_{'-'.join(codigos)}_{timestamp}.csv")
 
 # Ejecutar descarga (period="yearly" consolida totales; usa period="month" para desglosar por mes)
 df = automate_indec_comex(
     hs_codes=codigos,
     years=[2026],
     commerce_type="import",
-    period="yearly", 
+    period=periodo_descarga, 
     output_filename=filepath
 )
 
